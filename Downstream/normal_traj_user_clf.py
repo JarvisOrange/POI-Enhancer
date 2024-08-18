@@ -14,15 +14,17 @@ import os
 
 def create_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gpu", type=int, default=0, help="gpu")
+    parser.add_argument("--gpu", type=int, default=1, help="gpu")
 
     parser.add_argument(
         "--NAME",
+        default='NY_llama2_skipgram_256_Epoch_50',
         type=str
     )
 
     parser.add_argument(
         "--POI_MODEL_NAME",
+        default='skipgram_256_ny',
         type=str
     )
 
@@ -54,18 +56,6 @@ def create_args():
         type=str,
         default=None,
         help="Result save path",
-    )
-
-    parser.add_argument(
-        "--ablation",
-        type=str,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--para",
-        type=str,
-        default=None,
     )
 
     args = parser.parse_args()
@@ -160,22 +150,26 @@ def traj_user_classification(train_set, test_set, num_user, num_loc, clf_model, 
 if __name__ == '__main__':
     args = create_args()
     hidden_size = 512
-    device = torch.device(f"cuda:{args.gpu}" if torch.cuda.is_available() else "cpu")
-
-    
+    device = torch.device(f"cuda:{args.gpu}" if args.gpu and torch.cuda.is_available() else "cpu")
     
     name = args.NAME
     dataset  = args.dataset
     poi_model_name = args.POI_MODEL_NAME
 
-    temp = name.split('_')
-    name_without_epoch = '_'.join(temp[:4])
-    if args.ablation != None:
-        poi_embedding = torch.load('Washed_Embed/Ablation_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    elif args.para != None:
-        poi_embedding = torch.load('Washed_Embed/Para_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    else:
-        poi_embedding  = torch.load('Washed_Embed/Result_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
+    embedding = torch.load('Washed/hier_256_ny/poi_repr.pth').to(device)
+    embedding1 = torch.load('Washed_Embed/Result_Embed/NY/NY_llama2_hier_256/NY_llama2_hier_256_Epoch_50.pt').to(device)
+    
+    zeros = torch.zeros([1,256]).to(device)
+    zeros.require_grad=False
+    embedding1 = torch.concat([embedding1,zeros],dim=0)
+    
+
+    embedding.require_grad = False
+    embedding1.require_grad = False
+    poi_embedding = torch.concat([embedding, embedding1], dim=1)
+    embedding.require_grad = True
+    embedding1.require_grad = True
+    zeros.require_grad=True
 
     poi_embedding.require_grad = False
     zero_tensor = torch.zeros(1, poi_embedding.shape[1]).to(device)
@@ -211,7 +205,7 @@ if __name__ == '__main__':
     downstream_batch_size = 32
     epoch = 100
 
-    clf_model=LstmUserPredictor(poi_embedding, args.embed_size, hidden_size,hidden_size,num_user,num_layers=2,device=device)
+    clf_model=LstmUserPredictor(poi_embedding, args.embed_size * 2,  hidden_size,hidden_size,num_user,num_layers=2,device=device)
 
     result = {'name': args.NAME}
     result['traj_clf_acc'], result['traj_clf_pre'], result['traj_clf_recall'], result['traj_clf_f1_micro'], result['traj_clf_f1_macro'] =\

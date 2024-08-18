@@ -8,6 +8,7 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
 import argparse
+import os
 
 def create_args():
     parser = argparse.ArgumentParser()
@@ -20,7 +21,6 @@ def create_args():
 
     parser.add_argument(
         "--POI_MODEL_NAME",
-        default='hier_256_ny',
         type=str
     )
 
@@ -55,11 +55,32 @@ def create_args():
     )
 
     parser.add_argument(
+        "--prompt",
+        type=int,
+        default=0,
+        help='0 means address, 1 means address+visit, 2 means address+surrounding, 3means all sum'
+    )
+
+    parser.add_argument(
         "--save_path",
         type=str,
         default=None,
         help="Result save path",
     )
+
+    parser.add_argument(
+        "--ablation",
+        type=str,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--para",
+        type=str,
+        default=None,
+    )
+
+    
 
     args = parser.parse_args()
 
@@ -99,6 +120,8 @@ class Seq2seqFlowPredictor(nn.Module):
         :param recent_hour: hour indices of all sequences, shape (batch_size, his_len+pre_len)
         :return: prediction of future flows, shape (batch_size, pre_len)
         """
+
+        
         loc_embed = self.loc_embed_layer[loc_index]
         loc_h = self.embed_linear(loc_embed)  # (batch_size, latent_size)
         recent_flow_h = self.flow_linear(recent_history.unsqueeze(-1))  # (batch_size, his_len+pre_len, latent_size)
@@ -174,39 +197,97 @@ if __name__ == '__main__':
     name = args.NAME
     poi_model_name = args.POI_MODEL_NAME
     device = torch.device("cuda:"+str(args.gpu) if torch.cuda.is_available() else "cpu")
+    print(device)
 
-    embedding = torch.load('Washed/hier_256_ny/poi_repr.pth').to(device)
-    embedding1 = torch.load('Washed_Embed/Result_Embed/NY/NY_llama2_hier_256/NY_llama2_hier_256_Epoch_50.pt').to(device)
+    if args.prompt == 0:
+        name = str(dataset)+'_' + args.NAME +'_address_LAST'
+        if args.NAME != 'Llama2':
+            poi_embedding = torch.load('Washed_Embed/LLM_Embed/{}/{}/{}.pt'.format(args.NAME, dataset, name)).to(device)
+        else:
+            poi_embedding = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name)).to(device)
+    elif args.prompt == 1:
+        name  = str(dataset)+'_llama2_address_time_LAST'
+        name1 = str(dataset)+'_llama2_address_LAST'
+        poi_embedding1 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name1)).to(device)
+        name2 = str(dataset)+'_llama2_time_LAST'
+        poi_embedding2 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name2)).to(device)
+
+        poi_embedding1.requires_grad=False
+        poi_embedding2.requires_grad=False
+
+        poi_embedding = poi_embedding1 + poi_embedding2
+    elif args.prompt == 2:
+        name  = str(dataset)+'_llama2_address_cat_LAST'
+        name1 = str(dataset)+'_llama2_address_LAST'
+        poi_embedding1 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name1)).to(device)
+        name2 = str(dataset)+'_llama2_cat_nearby_LAST'
+        poi_embedding2 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name2)).to(device)
+
+        poi_embedding1.requires_grad=False
+        poi_embedding2.requires_grad=False
+
+        poi_embedding = poi_embedding1 + poi_embedding2
+    elif args.prompt == 3:
+        name  = str(dataset)+'_llama2_all_LAST'
+        name1 = str(dataset)+'_llama2_address_LAST'
+        poi_embedding1 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name1)).to(device)
+        name2 = str(dataset)+'_llama2_time_LAST'
+        poi_embedding2 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name2)).to(device)
+        name3 = str(dataset)+'_llama2_cat_nearby_LAST'
+        poi_embedding3 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name3)).to(device)
+
+        poi_embedding1.requires_grad=False
+        poi_embedding2.requires_grad=False
+        poi_embedding3.requires_grad=False
+
+        poi_embedding = poi_embedding1 + poi_embedding2 + poi_embedding3
+
+
+    poi_embedding.requires_grad = False
+    print(poi_embedding.shape)
+    with torch.no_grad():
+        if args.NAME == 'gpt2':
+            avg_pool = nn.AvgPool1d(kernel_size=3, stride=3)
+            poi_embedding = poi_embedding.unsqueeze(1)
+            poi_embedding = avg_pool(poi_embedding)
+            poi_embedding = poi_embedding.squeeze(1)
+        else:
+            avg_pool = nn.AvgPool1d(kernel_size=16, stride=16)
+            poi_embedding = poi_embedding.unsqueeze(1)
+            poi_embedding = avg_pool(poi_embedding)
+            poi_embedding = poi_embedding.squeeze(1)
+
+    poi_embedding.requires_grad = True
     
-    zeros = torch.zeros([1,256]).to(device)
-    zeros.require_grad=False
-    embedding1 = torch.concat([embedding1,zeros],dim=0)
 
-    embedding.require_grad = False
-    embedding1.require_grad = False
-    embedding = torch.concat([embedding, embedding1], dim=1)
-    embedding.require_grad = True
-    embedding1.require_grad = True
-    zeros.require_grad=True
+    poi_embedding = poi_embedding.to(torch.float)
+    
 
+
+    # embedding = torch.load('Washed/poi2vec_256_sg/poi_repr.pth').to(device)
     dataset = torch.load('Washed/common/{}_flow.pth'.format(dataset.lower()))
     batch_size = 128
+
+    
 
     np.random.shuffle(dataset)
     train_set = dataset[int(args.test_ratio * len(dataset)):]
     test_set = dataset[:int(args.test_ratio * len(dataset))]
 
-    model = Seq2seqFlowPredictor(loc_embed_layer=embedding, loc_embed_size=args.embed_size * 2, fc_size=256,
-                                  hidden_size=256, num_layers=2)
+    model = Seq2seqFlowPredictor(loc_embed_layer=poi_embedding, loc_embed_size=256, fc_size=256,
+                                  hidden_size=512, num_layers=2)
 
     best_mae, best_rmse, best_mape = train_flow_predictor(model, train_set, test_set, batch_size, num_epoch=100,
                                lr=1e-4, early_stopping_round=10, device=device, flow_len=args.flow_len)
     print(f'Best epoch: MAE: {best_mae:.6f}, RMSE: {best_rmse:.6f}, MAPE: {best_mape:.6f}')
 
     import os
-
-    pd.DataFrame({
-        'mae': best_mae,
-        'mape': best_mape,
-        'rmse': best_rmse
-    }, index=[1]).to_csv('temp.flow')
+    save_path = './Washed_Result_Metric/' + args.dataset + '/' + name +'/'
+    if not os.path.exists(save_path):
+            os.makedirs(save_path)
+    if args.save_path != 'train':
+        pd.DataFrame({
+            'mae': best_mae,
+            'mape': best_mape,
+            'rmse': best_rmse
+        }, index=[1]).to_csv(save_path + name + '.flow')

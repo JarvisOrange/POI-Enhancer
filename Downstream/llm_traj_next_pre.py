@@ -28,10 +28,6 @@ def create_args():
         type=str
     )
 
-    parser.add_argument(
-        "--POI_MODEL_NAME",
-        type=str
-    )
 
     parser.add_argument(
         "--dataset",
@@ -39,6 +35,11 @@ def create_args():
         default="NY",
         choices=["NY","SG","TKY"],
         help="which dataset",
+    )
+
+    parser.add_argument(
+        "--POI_MODEL_NAME",
+        type=str
     )
     
     parser.add_argument(
@@ -61,9 +62,10 @@ def create_args():
     )
 
     parser.add_argument(
-        "--para",
-        type=str,
-        default=None,
+        "--prompt",
+        type=int,
+        default=0,
+        help='0 means address, 1 means address+visit, 2 means address+surrounding, 3means all sum'
     )
     
     args = parser.parse_args()
@@ -176,18 +178,65 @@ if __name__ == '__main__':
 
     path1 = './Washed/'+ args.POI_MODEL_NAME+'/'
 
-    temp = name.split('_')
+    if args.prompt == 0:
+        name = str(dataset)+'_' + args.NAME +'_address_LAST'
+        poi_embedding = torch.load('Washed_Embed/LLM_Embed/{}/{}/{}.pt'.format(args.NAME, dataset, name)).to(device)
+    elif args.prompt == 1:
+        name  = str(dataset)+'_llama2_address_time_LAST'
+        name1 = str(dataset)+'_llama2_address_LAST'
+        poi_embedding1 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name1)).to(device)
+        name2 = str(dataset)+'_llama2_time_LAST'
+        poi_embedding2 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name2)).to(device)
 
-    name_without_epoch = '_'.join(temp[:4])
+        poi_embedding1.requires_grad=False
+        poi_embedding2.requires_grad=False
 
-    if args.ablation != None:
-        poi_embedding = torch.load('Washed_Embed/Ablation_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    elif args.para != None:
-        poi_embedding = torch.load('Washed_Embed/Para_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    else:
-        path2 = './Washed_Embed/Result_Embed/' + dataset + '/' + name_without_epoch +'/'
-        poi_embedding = torch.load(path2 + name +'.pt').to(device)
+        poi_embedding = poi_embedding1 + poi_embedding2
+    elif args.prompt == 2:
+        name  = str(dataset)+'_llama2_address_cat_LAST'
+        name1 = str(dataset)+'_llama2_address_LAST'
+        poi_embedding1 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name1)).to(device)
+        name2 = str(dataset)+'_llama2_cat_nearby_LAST'
+        poi_embedding2 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name2)).to(device)
 
+        poi_embedding1.requires_grad=False
+        poi_embedding2.requires_grad=False
+
+        poi_embedding = poi_embedding1 + poi_embedding2
+    elif args.prompt == 3:
+        name  = str(dataset)+'_llama2_all_LAST'
+        name1 = str(dataset)+'_llama2_address_LAST'
+        poi_embedding1 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name1)).to(device)
+        name2 = str(dataset)+'_llama2_time_LAST'
+        poi_embedding2 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name2)).to(device)
+        name3 = str(dataset)+'_llama2_cat_nearby_LAST'
+        poi_embedding3 = torch.load('Washed_Embed/LLM_Embed/{}/{}.pt'.format(dataset, name3)).to(device)
+
+        poi_embedding1.requires_grad=False
+        poi_embedding2.requires_grad=False
+        poi_embedding3.requires_grad=False
+
+        poi_embedding = poi_embedding1 + poi_embedding2 + poi_embedding3
+
+
+    poi_embedding.requires_grad = False
+    
+    with torch.no_grad():
+        if args.NAME == 'gpt2':
+            avg_pool = nn.AvgPool1d(kernel_size=3, stride=3)
+            poi_embedding = poi_embedding.unsqueeze(1)
+            poi_embedding = avg_pool(poi_embedding)
+            poi_embedding = poi_embedding.squeeze(1)
+        else:
+            avg_pool = nn.AvgPool1d(kernel_size=16, stride=16)
+            poi_embedding = poi_embedding.unsqueeze(1)
+            poi_embedding = avg_pool(poi_embedding)
+            poi_embedding = poi_embedding.squeeze(1)
+
+    poi_embedding.requires_grad = True
+
+
+    
 
     
     #FIXME
@@ -197,10 +246,6 @@ if __name__ == '__main__':
 
     # test_set = torch.load()
 
-
-    
-
-        
     
 
     #We have to remake the train set and test set
@@ -256,7 +301,7 @@ if __name__ == '__main__':
         
         if epoch % 5 == 0:
             result = pd.DataFrame({
-                'name': args.NAME,
+                'name': name,
                 'accuracy1': best_acc1,
                 'accuracy5': best_acc5,
                 'f1-micro': best_f1_micro,
@@ -279,11 +324,10 @@ if __name__ == '__main__':
         'Acc1 %.6f %%, Acc5 %.6f %%, F1-micro %.6f, F1-macro %.6f' % (
             best_acc1, best_acc5, best_f1_micro, best_f1_macro))
 
-    
 
 
     result = pd.DataFrame({
-        'name': args.NAME,
+        'name': name,
         'accuracy1': best_acc1,
         'accuracy5': best_acc5,
         'f1-micro': best_f1_micro,

@@ -253,7 +253,7 @@ class FuseAttentionBlock(nn.Module):
  
 
 class PoiEnhancer(nn.Module):
-    def __init__(self,  llm_e_path_a, llm_e_path_c, llm_e_path_t, poi_e_path, cross_layer_num=3, dim=256):
+    def __init__(self,  llm_e_path_a, llm_e_path_c, llm_e_path_t, poi_e_path, align_layer_num=3,cross_layer_num=3, dim=256):
         
         super().__init__()
         
@@ -267,12 +267,9 @@ class PoiEnhancer(nn.Module):
     
         self.llm_e_dim = self.llm_layer_a.get_shape()[1]
         self.poi_e_dim = self.poi_layer.get_shape()[1]
-
-
-        self.cross_layer_num = cross_layer_num
         
         self.nearby_alignment = nn.ModuleList([])
-        for _ in range(cross_layer_num):
+        for _ in range(align_layer_num):
             self.nearby_alignment.append(
                 CrossAttentionTransformer(dim=self.poi_e_dim)
             )

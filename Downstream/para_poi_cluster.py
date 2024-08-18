@@ -1,10 +1,13 @@
 import torch
 import pandas as pd
+import numpy as np
 from sklearn.cluster import KMeans
 from sklearn import metrics
+from sklearn.decomposition import PCA
 import argparse
+from sklearn.preprocessing import StandardScaler
 
-device='cuda:0'
+device='cuda:1'
 def create_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gpu", type=int, default=1, help="gpu")
@@ -34,6 +37,13 @@ def create_args():
         help="Result save path",
     )
 
+    parser.add_argument(
+        "--origin",
+        type=str,
+        default=None,
+        
+    )
+
 
     args = parser.parse_args()
 
@@ -48,64 +58,68 @@ if __name__ == '__main__':
 
     temp = name.split('_')
     name_without_epoch = '_'.join(temp[:4])
-    embedding = torch.load('Washed_Embed/Result_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
+    
+
+    
+    
+    if args.origin == '1':
+        embedding = torch.load('Washed/skipgram_256_ny/poi_repr.pth').to(device)
+    else:
+        embedding = torch.load('Washed_Embed/Result_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
     category = pd.read_csv('Washed/{}/category.csv'.format(poi_model_name), usecols=['geo_id', 'category'])
 
     inputs=category.geo_id.to_numpy()
     labels=category.category.to_numpy()
+
+    
+
+    from collections import Counter
+
+    result = Counter(list(labels))
+   
+    d = sorted(result.items(), key=lambda x: x[1], reverse=True)
+
+    top_ten_values = [x[0] for x in d[0:5]]
+
+
     num_class = labels.max()+1
 
     node_embedding=embedding[torch.tensor(inputs)].cpu()
+
+    node_embedding = StandardScaler().fit_transform(node_embedding)
 
     print(f'Start Kmeans, data.shape = {node_embedding.shape}, kinds = {num_class}')
     k_means = KMeans(n_clusters=num_class, random_state=42)
     k_means.fit(node_embedding)
     y_predict = k_means.predict(node_embedding)
     y_predict_useful = y_predict
-    nmi = metrics.normalized_mutual_info_score(labels, y_predict_useful)
-    ars = metrics.adjusted_rand_score(labels, y_predict_useful)
-    # SC指数
-    sc = float(metrics.silhouette_score(node_embedding, k_means.labels_, metric='euclidean'))
-    # DB指数
-    db = float(metrics.davies_bouldin_score(node_embedding, k_means.labels_))
-    # CH指数
-    ch = float(metrics.calinski_harabasz_score(node_embedding, k_means.labels_))
-    print(f"Evaluate result [loc_cluaster] is sc = {sc:6f}, db = {db:6f}, ch = {ch:6f}, nmi = {nmi:6f}, ars = {ars:6f}")
-    result = pd.DataFrame({
-        'name': args.NAME,
-        'sc': sc,
-        'db': db,
-        'ch': ch,
-        'nmi': nmi,
-        'ars':ars,
-    }, index=[1])
-
-
-
-    import os
-    save_path = './Washed_Result_Metric/' + args.dataset + '/' + name +'/'
-    if not os.path.exists(save_path):
-            os.makedirs(save_path)
-    if args.save_path != 'train':
-        result.to_csv(save_path + name + '.cluster', index=False)
-
-
+    
     
 
-    from sklearn.decomposition import PCA
+    
     pca = PCA(n_components=2)
     pca.fit(node_embedding)
     data_pca = pca.transform(node_embedding)
     data_pca = pd.DataFrame(data_pca)
-    data_pca.insert(data_pca.shape[1], 'labels', labs)
 
-    cluster_list = []
-    for n in range(num_class):
-        cluster = node_embedding[k_means.lables_ == n]
-        cluster.append(cluster)
+
+    data_pca.insert(data_pca.shape[1], 'labels', labels)
+    
+    cluster_list = data_pca[data_pca['labels'].isin(top_ten_values)]
+
 
     predicted_labels = y_predict
 
     import matplotlib.pyplot as plt
-    plt.scatter(data_pca.shape[:, 0], data_pca.shape[:, 1], c=predicted_labels, s=50, cmap='viridis')
+
+    print(len(cluster_list))
+
+    data_pca = pd.DataFrame(cluster_list)
+
+
+
+    plt.scatter(data_pca.iloc[:, 0], data_pca.iloc[:, 1], c=data_pca.iloc[:, 2], s=20, cmap='viridis')
+
+    
+plt.savefig(args.origin+".jpg")
 

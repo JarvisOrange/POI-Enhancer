@@ -108,10 +108,14 @@ class PoiDataset(data.Dataset):
         return len(self.data)
     
 class ContrastDataset(data.Dataset):
-    def __init__(self,  path, device, simple=False):
+    def __init__(self,  path, device, simple=False,ablation=0):
         df = pd.read_csv(path,sep=',', header=0, dtype={'anchor':int,'positive':int, 'negative':str})
+        if ablation == 3:
+            df= df.sample(frac=0.2)
+            
         if simple == 'True':
-            df= df.sample(frac=0.0001)
+                df= df.sample(frac=0.0001)
+        
         df['negative'] = df['negative'].apply(lambda x : eval(x))
         self.device = device
         self.data = df
@@ -141,38 +145,40 @@ def simloss(embed_new, st_embed):
 
     
 
-def save_embed(Model, dataset, LLM, dim, poi_model, epoch, device, train_split=False, ablation=0):
+def save_embed(Model, dataset, LLM, dim, poi_model, epoch, device, align_layer_num=3, cross_layer_num=3, ablation=0):
     if ablation != 0:
         name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'_ablation' + str(ablation)+'.pt'
 
         name_statedict = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) +  '_Epoch_' +str(epoch) +'_ablation'+ str(ablation)+'.pt'
     else:
-        if train_split:
-            name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'_train.pt'
+        if align_layer_num != 3:
+            name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'_align_' + str(align_layer_num) +'.pt'
 
-            name_statedict = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) +  '_Epoch_' +str(epoch) +'_train.pt'
+        elif cross_layer_num != 3:
+            name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'_cross_' + str(cross_layer_num) +'.pt'
+
         else: 
             name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'.pt'
             
-            name_statedict = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) +  '_Epoch_' +str(epoch) +'_statedict.pt'
+        
     
     if ablation != 0:
         embed_path = './Washed_Embed/Ablation_Embed/'+ dataset +'/' + dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
+    elif align_layer_num != 3 or cross_layer_num != 3:
+        embed_path = './Washed_Embed/Para_Embed/'+ dataset +'/' + dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
     else:
         embed_path = './Washed_Embed/Result_Embed/'+ dataset +'/' + dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
 
-    model_path =  "./Washed_Model_state_dict_cache/" + dataset  +'/'+ dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
+    # model_path =  "./Washed_Model_state_dict_cache/" + dataset  +'/'+ dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
 
     if not os.path.exists(embed_path):
         os.makedirs(embed_path)
 
-    if not os.path.exists(model_path):
-        os.makedirs(model_path)
 
     batch_size = 128
 
 
-    torch.save({'model': Model.state_dict()}, model_path + name_statedict)
+    # torch.save({'model': Model.state_dict()}, model_path + name_statedict)
 
 
     path = './Dataset/' + dataset +'/'+ dataset.lower() + '_geo.csv'

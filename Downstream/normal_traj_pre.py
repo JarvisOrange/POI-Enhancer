@@ -8,7 +8,7 @@ from sklearn import metrics
 from numpy.random import shuffle
 from tqdm import tqdm
 
-embed_size = 256 # The size of poi embeddings. 128 or 256 in our exp.
+embed_size = 512 # The size of poi embeddings. 128 or 256 in our exp.
 downstream_batch_size = 32
 pre_model_seq2seq = True
 predict_len = 1
@@ -16,12 +16,13 @@ test_ratio = 0.2
 
 import argparse
 import os
+os.environ['CUDA_LAUNCH_BLOCKING'] = '0'
 
 
 
 def create_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gpu", type=int, default=0, help="gpu")
+    parser.add_argument("--gpu", type=int, default=1, help="gpu")
 
     parser.add_argument(
         "--NAME",
@@ -30,6 +31,7 @@ def create_args():
 
     parser.add_argument(
         "--POI_MODEL_NAME",
+        default='hier_256_tky',
         type=str
     )
 
@@ -51,19 +53,7 @@ def create_args():
     parser.add_argument(
         "--epoch",
         type=int,
-        default=100,
-    )
-
-    parser.add_argument(
-        "--ablation",
-        type=str,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--para",
-        type=str,
-        default=None,
+        default=50,
     )
     
     args = parser.parse_args()
@@ -173,20 +163,16 @@ if __name__ == '__main__':
     dataset = args.dataset
 
     task_epoch = args.epoch
+    
+
 
     path1 = './Washed/'+ args.POI_MODEL_NAME+'/'
 
-    temp = name.split('_')
+    # temp = name.split('_')
 
-    name_without_epoch = '_'.join(temp[:4])
-
-    if args.ablation != None:
-        poi_embedding = torch.load('Washed_Embed/Ablation_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    elif args.para != None:
-        poi_embedding = torch.load('Washed_Embed/Para_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    else:
-        path2 = './Washed_Embed/Result_Embed/' + dataset + '/' + name_without_epoch +'/'
-        poi_embedding = torch.load(path2 + name +'.pt').to(device)
+    # name_without_epoch = '_'.join(temp[:4])
+    
+    # path2 = './Washed_Embed/Result_Embed/' + dataset + '/' + name_without_epoch +'/'
 
 
     
@@ -199,7 +185,21 @@ if __name__ == '__main__':
 
 
     
+    embedding = torch.load('Washed/hier_256_ny/poi_repr.pth').to(device)
+    embedding1 = torch.load('Washed_Embed/Result_Embed/NY/NY_llama2_hier_256/NY_llama2_hier_256_Epoch_50.pt').to(device)
+    
+    zeros = torch.zeros([1,256]).to(device)
+    zeros.require_grad=False
+    embedding1 = torch.concat([embedding1,zeros],dim=0)
 
+    embedding.require_grad = False
+    embedding1.require_grad = False
+    poi_embedding = torch.concat([embedding, embedding1], dim=1)
+    embedding.require_grad = True
+    embedding1.require_grad = True
+    zeros.require_grad=True
+
+    
         
     
 
@@ -216,7 +216,7 @@ if __name__ == '__main__':
     pre_model = TrajectoryPredictor(num_slots=10, aux_embed_size=16,
                                     time_thres=10800, dist_thres=0.1,
                                     input_size=embed_size, lstm_hidden_size=512,
-                                    fc_hidden_size=embed_size * 4, output_size=num_loc, num_layers=2,
+                                    fc_hidden_size=1024, output_size=num_loc, num_layers=2,
                                     seq2seq=pre_model_seq2seq)
 
 
@@ -265,11 +265,11 @@ if __name__ == '__main__':
             }, index=[1])
 
             
-            save_path = './Washed_Result_Metric/' + args.dataset + '/' + name +'/'
-            if not os.path.exists(save_path):
-                    os.makedirs(save_path)
-            if args.save_path != 'train':
-                result.to_csv(save_path + args.NAME + '.pre', index=False)
+            # save_path = './Washed_Result_Metric/' + args.dataset + '/' + name +'/'
+            # if not os.path.exists(save_path):
+            #         os.makedirs(save_path)
+            # if args.save_path != 'train':
+            #     result.to_csv(save_path + args.NAME + '.pre', index=False)
                     
         print('epoch {} complete! avg loss:{}'.format(epoch,np.mean(losses)))
 
@@ -290,9 +290,9 @@ if __name__ == '__main__':
         'f1-macro': best_f1_macro,
     }, index=[1])
 
-    import os
-    save_path = './Washed_Result_Metric/' + args.dataset + '/' + name +'/'
-    if not os.path.exists(save_path):
-            os.makedirs(save_path)
-    if args.save_path != 'train':
-        result.to_csv(save_path + name + '.pre', index=False)
+    # import os
+    # save_path = './Washed_Result_Metric/' + args.dataset + '/' + name +'/'
+    # if not os.path.exists(save_path):
+    #         os.makedirs(save_path)
+    # if args.save_path != 'train':
+    #     result.to_csv(save_path + name + '.pre', index=False)

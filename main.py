@@ -21,6 +21,8 @@ from info_nce import InfoNCE, info_nce
 from poi_utils import *
 from model_init import *
 
+from model_ablation2 import *
+
 import torch.distributed as dist
 from torch.nn.parallel import DistributedDataParallel as DDP
 
@@ -68,8 +70,13 @@ def create_args():
     parser.add_argument(
         "--cross_layer_num",
         type=int,
-        default=3,
-        help="depth of the unimodal transformer",
+        default=3
+    )
+
+    parser.add_argument(
+        "--align_layer_num",
+        type=int,
+        default=3
     )
 
     parser.add_argument(
@@ -88,6 +95,13 @@ def create_args():
         type=int,
         default = -1
     )
+
+    parser.add_argument(
+        '--train_split',
+        type=int,
+        default = 0
+    )
+   
 
     parser.add_argument(
         '--cpu',
@@ -123,6 +137,8 @@ def main():
 
     cross_layer_num = args.cross_layer_num
 
+    align_layer_num = args.align_layer_num
+
     if ablation == 1:
         llm_embed_path = "./Washed_Embed/Ablation_Embed/" + dataset
     else:
@@ -135,7 +151,9 @@ def main():
     llm_name_list_time = [dataset, LLM, 'time','LAST']
 
     poi_name_list = [poi_model, str(dim), dataset.lower()]
-    
+
+    if ablation == 2:
+        path_address = "./Washed_Embed/Ablation_Embed/" + dataset + '/' + 'NY_llama2_sum_LAST'
 
     path_address = llm_embed_path + '/' + '_'.join(llm_name_list_address) + '.pt'
     path_cat = llm_embed_path + '/' + '_'.join(llm_name_list_cat_nearby) + '.pt'
@@ -144,14 +162,20 @@ def main():
 
     path4 =  poi_embed_path +'/' + '_'.join(poi_name_list) + '/poi_repr.pth' 
 
-
-    train_data_name = dataset+'_train.csv'
+    if ablation == 3:
+        train_data_name = dataset+'_train_ablation3.csv'
+    elif args.train_split != 0:
+        train_data_name = dataset+'_train_split.csv'
+    else:
+        train_data_name = dataset+'_train.csv'
     
-    train_dataset = ContrastDataset('./Washed_ContrastDataset/' + train_data_name, device, simple=args.simple_dataset)
+    train_dataset = ContrastDataset('./Washed_ContrastDataset/' + train_data_name, device, simple=args.simple_dataset, ablation=ablation)
     train_dataloader = DataLoader(train_dataset, batch_size = BATCH_SIZE, shuffle=True)
 
-
-    Model = PoiEnhancer(path_address, path_cat, path_visit, path4, cross_layer_num=cross_layer_num, dim=dim).to(device)
+    if ablation == 2:
+        Model = PoiEnhancer_ablation2(path_address, path4, cross_layer_num=cross_layer_num, dim=dim).to(device)
+    else:
+        Model = PoiEnhancer(path_address, path_cat, path_visit, path4, align_layer_num=align_layer_num, cross_layer_num=cross_layer_num, dim=dim).to(device)
     Model.train()
     optimizer = torch.optim.AdamW(Model.parameters(), lr=LR, weight_decay=1e-3)
 
@@ -193,7 +217,7 @@ def main():
 
         if (epoch + 1) % SAVE_INTERVAL == 0:
             Model.eval()
-            save_embed(Model, dataset, LLM, dim, poi_model, epoch+1, device, train_split=False, ablation=ablation)
+            save_embed(Model, dataset, LLM, dim, poi_model, epoch+1, device, align_layer_num, cross_layer_num, ablation=ablation)
             Model.train()
 
         optimizer.zero_grad()

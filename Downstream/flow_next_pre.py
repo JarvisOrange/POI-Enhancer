@@ -8,10 +8,11 @@ from sklearn.preprocessing import StandardScaler
 import pandas as pd
 
 import argparse
+import os
 
 def create_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--gpu", type=int, default=1, help="gpu")
+    parser.add_argument("--gpu", type=int, default=0, help="gpu")
 
     parser.add_argument(
         "--NAME",
@@ -58,6 +59,18 @@ def create_args():
         type=str,
         default=None,
         help="Result save path",
+    )
+
+    parser.add_argument(
+        "--ablation",
+        type=str,
+        default=None,
+    )
+
+    parser.add_argument(
+        "--para",
+        type=str,
+        default=None,
     )
 
     args = parser.parse_args()
@@ -173,10 +186,17 @@ if __name__ == '__main__':
     name = args.NAME
     poi_model_name = args.POI_MODEL_NAME
     device = torch.device("cuda:"+str(args.gpu) if torch.cuda.is_available() else "cpu")
+    print(device)
 
     temp = name.split('_')
-    name_without_epoch = '_'.join(temp[:-2])
-    embedding = torch.load('Washed_Embed/Result_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
+    name_without_epoch = '_'.join(temp[:4])
+    if args.ablation != None:
+        embedding = torch.load('Washed_Embed/Ablation_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
+    elif args.para != None:
+        embedding = torch.load('Washed_Embed/Para_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
+    else:
+        embedding = torch.load('Washed_Embed/Result_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
+    # embedding = torch.load('Washed/poi2vec_256_sg/poi_repr.pth').to(device)
     dataset = torch.load('Washed/common/{}_flow.pth'.format(dataset.lower()))
     batch_size = 128
 
@@ -185,18 +205,19 @@ if __name__ == '__main__':
     test_set = dataset[:int(args.test_ratio * len(dataset))]
 
     model = Seq2seqFlowPredictor(loc_embed_layer=embedding, loc_embed_size=args.embed_size, fc_size=256,
-                                  hidden_size=256, num_layers=2)
+                                  hidden_size=512, num_layers=2)
 
     best_mae, best_rmse, best_mape = train_flow_predictor(model, train_set, test_set, batch_size, num_epoch=100,
                                lr=1e-4, early_stopping_round=10, device=device, flow_len=args.flow_len)
-    print(f'Best epoch: MAE: {best_mae:.4f}, RMSE: {best_rmse:.4f}, MAPE: {best_mape:.4f}')
+    print(f'Best epoch: MAE: {best_mae:.6f}, RMSE: {best_rmse:.6f}, MAPE: {best_mape:.6f}')
 
     import os
     save_path = './Washed_Result_Metric/' + args.dataset + '/' + name +'/'
     if not os.path.exists(save_path):
             os.makedirs(save_path)
-    pd.DataFrame({
-        'mae': best_mae,
-        'mape': best_mape,
-        'rmse': best_rmse
-    }, index=[1]).to_csv(save_path + name + '.flow')
+    if args.save_path != 'train':
+        pd.DataFrame({
+            'mae': best_mae,
+            'mape': best_mape,
+            'rmse': best_rmse
+        }, index=[1]).to_csv(save_path + name + '.flow')

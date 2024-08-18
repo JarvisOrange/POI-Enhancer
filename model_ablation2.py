@@ -37,16 +37,14 @@ class ReductionBlock(nn.Module):
       
 
 class EmbeddingBlock(nn.Module):
-    def __init__(self, hidden_dim=256,  dim_reduct=True, embed_path=''):
+    def __init__(self, hidden_dim=256,  embed_path=''):
         super().__init__()
         self.embed = torch.load(embed_path)
         num, dim = self.embed.shape
         self.shape = self.embed.shape
 
         self.embedding_layer = nn.Embedding(num, dim, _weight=self.embed)
-        
-        self.dim_reduct = dim_reduct
-        
+                
         self.reduct = ReductionBlock(dim, hidden_dim)
 
         for p in self.embedding_layer.parameters():
@@ -205,7 +203,7 @@ class CrossAttentionTransformer(nn.Module):
 
         out = self.to_out(out)
 
-        out = y + self.norm1(out)
+        out = y + self.norm1(y + out)
 
         out1 = self.feedforward2(self.activation(self.feedforward1(out)))
 
@@ -316,17 +314,15 @@ class FuseAttentionBlock(nn.Module):
         return coef
  
 
-class PoiEnhancer(nn.Module):
-    def __init__(self,  llm_e_path_a, llm_e_path_c, llm_e_path_t, poi_e_path, cross_layer_num=3, dim=256):
+class PoiEnhancer_ablation2(nn.Module):
+    def __init__(self,  llm_e_path_a, poi_e_path, cross_layer_num=3, dim=256):
         
         super().__init__()
         
         self.llm_layer_a = EmbeddingBlock(embed_path = llm_e_path_a, hidden_dim=dim)
-        self.llm_layer_c = EmbeddingBlock(embed_path = llm_e_path_c, hidden_dim=dim)
-        self.llm_layer_t = EmbeddingBlock(embed_path = llm_e_path_t, hidden_dim=dim)
-
     
-        self.poi_layer = EmbeddingBlock(embed_path = poi_e_path, hidden_dim = dim, dim_reduct=False)
+    
+        self.poi_layer = EmbeddingBlock(embed_path = poi_e_path, hidden_dim = dim)
 
     
         self.llm_e_dim = self.llm_layer_a.get_shape()[1]
@@ -335,19 +331,19 @@ class PoiEnhancer(nn.Module):
 
         self.cross_layer_num = cross_layer_num
         
-        self.nearby_alignment = nn.ModuleList([])
-        for _ in range(cross_layer_num):
-            self.nearby_alignment.append(
-                CrossAttentionTransformer(dim=self.poi_e_dim)
-            )
+        # self.nearby_alignment = nn.ModuleList([])
+        # for _ in range(cross_layer_num):
+        #     self.nearby_alignment.append(
+        #         CrossAttentionTransformer(dim=self.poi_e_dim)
+        #     )
 
-        self.time_alignment = nn.ModuleList([])
-        for _ in range(cross_layer_num):
-            self.time_alignment.append(
-                CrossAttentionTransformer(dim=self.poi_e_dim)
-            )
+        # self.time_alignment = nn.ModuleList([])
+        # for _ in range(cross_layer_num):
+        #     self.time_alignment.append(
+        #         CrossAttentionTransformer(dim=self.poi_e_dim)
+        #     )
 
-        self.semantic_attention_fusion =  FuseAttentionBlock(dim=self.poi_e_dim, dim_fused= 2 * self.poi_e_dim)
+        # self.semantic_attention_fusion =  FuseAttentionBlock(dim=self.poi_e_dim, dim_fused= 2 * self.poi_e_dim)
 
         self.dual_modal_fuse_norm = LayerNorm(dim)
         self.dual_modal_fusion = nn.ModuleList([])
@@ -366,33 +362,33 @@ class PoiEnhancer(nn.Module):
 
     def forward(self, batch):
     
-        llm_e_a_1 = self.llm_layer_a(batch)
-        llm_e_a_2 = llm_e_a_1
+        llm_e_a = self.llm_layer_a(batch)
+        # llm_e_a_2 = llm_e_a_1
         
-        llm_e_c = self.llm_layer_c(batch)
-        llm_e_t = self.llm_layer_t(batch)
+        # llm_e_c = self.llm_layer_c(batch)
+        # llm_e_t = self.llm_layer_t(batch)
 
         
     
-        for block_nearby in self.nearby_alignment:
-            llm_e_a_1 = block_nearby(llm_e_c, llm_e_a_1)
+        # for block_nearby in self.nearby_alignment:
+        #     llm_e_a_1 = block_nearby(llm_e_c, llm_e_a_1)
         
-        for block_time in self.time_alignment:
-            llm_e_a_2 = block_time(llm_e_t, llm_e_a_2)
+        # for block_time in self.time_alignment:
+        #     llm_e_a_2 = block_time(llm_e_t, llm_e_a_2)
 
-        out = torch.stack([llm_e_a_1, llm_e_a_2])
+        # out = torch.stack([llm_e_a_1, llm_e_a_2])
 
-        out1 = rearrange(out, 'fn b n d -> fn (b n) d')
+        # out1 = rearrange(out, 'fn b n d -> fn (b n) d')
         
-        coef = self.semantic_attention_fusion(out1)
+        # coef = self.semantic_attention_fusion(out1)
 
-        temp_out = coef[0] * out[0] + coef[1] * out[1] 
+        # temp_out = coef[0] * out[0] + coef[1] * out[1] 
 
         y = self.poi_layer(batch)
         y_ = y
 
         for block in self.dual_modal_fusion:
-            y = block(temp_out, y)
+            y = block(llm_e_a, y)
 
         z = self.to_embedding(y)
 

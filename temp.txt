@@ -1,0 +1,2 @@
+    PID TTY      STAT   TIME COMMAND
+1166806 pts/68   Rl+   10:48 python Downstream/llm_traj_next_pre.py --gpu 0 --NAME NY_llama2_poi2vec_256_Epoch_50 --dataset NY --POI_MODEL_NAME poi2vec_256_ny --epoch 50 --prompt 0

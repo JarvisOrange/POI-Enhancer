@@ -3,33 +3,23 @@
 n="NY_llama2_poi2vec_256_Epoch_50"
 pn='poi2vec_256_ny'
 dataset='NY'
-gpu=1
+gpu=3
+p=3
+
 
 echo $n
 
-# python Downstream/poi_cluster.py    --gpu $gpu --NAME $n --dataset $dataset --POI_MODEL_NAME $pn
+python Downstream/llm_flow_next_pre.py    --gpu $gpu --NAME $n --dataset $dataset --POI_MODEL_NAME $pn --prompt $p
 
+python Downstream/llm_traj_next_pre.py    --gpu $gpu --NAME $n --dataset $dataset --POI_MODEL_NAME $pn --epoch  50 --prompt $p
 
-# echo $n
-
-# echo "----------- task 2 done -----------"
-
-# python Downstream/flow_next_pre.py    --gpu $gpu --NAME $n --dataset $dataset --POI_MODEL_NAME $pn
-
-# echo $n
-
-# echo "----------- task 3 done -----------"
-
-
-# python Downstream/traj_user_clf.py    --gpu $gpu --NAME $n --dataset $dataset --POI_MODEL_NAME $pn
-
-# echo $n
-
-# echo "----------- task 4 done -----------"
-
-python Downstream/traj_next_pre.py    --gpu $gpu --NAME $n --dataset $dataset --POI_MODEL_NAME $pn
+echo "----------- task 2 done -----------"
 
 echo $n
 
-echo "----------- task 5 done -----------"
 
+
+echo "----------- task 3 done -----------"
+
+
+python Downstream/llm_traj_user_clf.py    --gpu $gpu --NAME $n --dataset $dataset --POI_MODEL_NAME $pn --prompt $p

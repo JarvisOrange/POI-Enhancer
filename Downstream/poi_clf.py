@@ -58,7 +58,7 @@ if __name__ == '__main__':
     path1 = './Washed/'+ args.POI_MODEL_NAME+'/'
 
     temp = name.split('_')
-    name_without_epoch = '_'.join(temp[:-2])
+    name_without_epoch = '_'.join(temp[:4])
     
     path2 = './Washed_Embed/Result_Embed/' + dataset + '/' + name_without_epoch+'/'
     category = pd.read_csv(path1 + 'category.csv', usecols=['geo_id', 'category'])
@@ -148,4 +148,5 @@ if __name__ == '__main__':
     save_path = './Washed_Result_Metric/' + args.dataset + '/' + name +'/'
     if not os.path.exists(save_path):
             os.makedirs(save_path)
-    result.to_csv(save_path + name + '.clf', index=False)
+    if args.save_path != 'train':
+        result.to_csv(save_path + name + '.clf', index=False)

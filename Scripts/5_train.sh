@@ -8,5 +8,5 @@ python main.py \
     --epoch_num 50 \
     --dim 256 \
     --batch_size 64 \
-    --save_interval 5 \
-    --ablation 1
+    --cross_layer_num 5 \
+    --save_interval 10
