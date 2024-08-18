@@ -42,12 +42,6 @@ def get_geo_cat_neighbor(poi_list, poi_id, cat, minlon, maxlon, minlat, maxlat):
                                (poi_list['lat'] < maxlat) &
                                (poi_list['category'] == cat)
                                ]
-    # poi_geo_cat_neighbor = poi_list[(poi_list['geo_id'] !=poi_id) &
-    #                            (poi_list['lon'] > minlon) & 
-    #                            (poi_list['lon'] < maxlon) & 
-    #                            (poi_list['lat'] > minlat) & 
-    #                            (poi_list['lat'] < maxlat) 
-    #                            ]
     return poi_geo_cat_neighbor
 
 
@@ -76,8 +70,6 @@ def gen_poi_geoneighbor(dataset_name,  save_path="./Washed_ContrastDataset/"):
 
 
     geoneighbor_list = []
-    # x = 0  #平均23.42181672045914
-    x = 0  #平均tky:5.605644948562385 sg:6.727299791604644 ny:8.09805954059209
     for _, row in tqdm(poi_df.iterrows(), total=poi_df.shape[0]):
         poi_id = row['geo_id']
         cat= row['category']
@@ -87,7 +79,6 @@ def gen_poi_geoneighbor(dataset_name,  save_path="./Washed_ContrastDataset/"):
         temp =  list(poi_geo_cat_neighbor['geo_id'])
         x += len(temp)
         geoneighbor_list.append([poi_id, temp])
-    print(x/len(poi_df))
     geoneighbor_df = pd.DataFrame(geoneighbor_list, columns=['geo_id','geo_positive'])
 
     save_path = save_path +'/'+ dataset_name +'/'
@@ -100,8 +91,7 @@ def gen_poi_geoneighbor(dataset_name,  save_path="./Washed_ContrastDataset/"):
     
         
       
-        
-for dataset in ['NY']:   
+for dataset in ['NY','TKY','SG']:   
     gen_poi_geoneighbor(dataset)  
 
     

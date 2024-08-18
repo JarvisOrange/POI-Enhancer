@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 import torch
 from torch import nn
-from libcity_utils import *
+from downstream_utils import *
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence
 from sklearn import metrics
 from numpy.random import shuffle
@@ -13,6 +13,7 @@ downstream_batch_size = 32
 pre_model_seq2seq = True
 predict_len = 1
 test_ratio = 0.2
+valid_ratio = 0.1
 
 import argparse
 import os
@@ -54,17 +55,6 @@ def create_args():
         default=100,
     )
 
-    parser.add_argument(
-        "--ablation",
-        type=str,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--para",
-        type=str,
-        default=None,
-    )
     
     args = parser.parse_args()
 
@@ -167,47 +157,34 @@ if __name__ == '__main__':
 
     args = create_args()
     device = torch.device("cuda:"+str(args.gpu) if torch.cuda.is_available() else "cpu")
-    # device = 'cpu'
     name = args.NAME
 
     dataset = args.dataset
 
     task_epoch = args.epoch
 
-    path1 = './Washed/'+ args.POI_MODEL_NAME+'/'
+    
 
     temp = name.split('_')
 
     name_without_epoch = '_'.join(temp[:4])
 
-    if args.ablation != None:
-        poi_embedding = torch.load('Washed_Embed/Ablation_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    elif args.para != None:
-        poi_embedding = torch.load('Washed_Embed/Para_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    else:
-        path2 = './Washed_Embed/Result_Embed/' + dataset + '/' + name_without_epoch +'/'
-        poi_embedding = torch.load(path2 + name +'.pt').to(device)
 
+    path2 = './Washed_Embed/Result_Embed/' + dataset + '/' + name_without_epoch +'/'
+    poi_embedding = torch.load(path2 + name +'.pt').to(device)
 
-    
-    #FIXME
+    path1 = './Washed/'+ args.POI_MODEL_NAME+'/'
+
     category = pd.read_csv(path1+'category.csv', usecols=['geo_id'])
     
     traj_set = torch.load(path1+'traj_set.pth')
 
-    # test_set = torch.load()
 
-
-    
-
-        
-    
-
-    #We have to remake the train set and test set
+   
     whole_set = list(filter(lambda data: len(data[1]) > predict_len, traj_set))
     np.random.seed(42)
     shuffle(whole_set)
-    train_set = whole_set[int(len(whole_set) * test_ratio):]
+    train_set = whole_set[int(len(whole_set) * (test_ratio+valid_ratio)):]
     test_set = whole_set[:int(len(whole_set) * test_ratio)]
     print(f'Train set size: {len(train_set)}, test set size: {len(test_set)}')
     

@@ -1,6 +1,6 @@
 import torch
 from torch import nn
-from libcity_utils import weight_init, next_batch
+from downstream_utils import weight_init, next_batch
 import numpy as np
 from sklearn.utils import shuffle
 from sklearn.metrics import mean_absolute_error, mean_squared_error, mean_absolute_percentage_error
@@ -61,17 +61,6 @@ def create_args():
         help="Result save path",
     )
 
-    parser.add_argument(
-        "--ablation",
-        type=str,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--para",
-        type=str,
-        default=None,
-    )
 
     args = parser.parse_args()
 
@@ -103,14 +92,7 @@ class Seq2seqFlowPredictor(nn.Module):
         self.apply(weight_init)
 
     def forward(self, recent_history, loc_index, recent_hour, **kwargs):
-        """
-        :param recent_history: historical flow sequences, shape (batch_size, his_len)
-        :param remote_history: remote historical flow sequences from previews day, shape (batch_size, his_len)
-        :param target_seq: target flow sequences, shape (batch_size, pre_len)
-        :param loc_index: location indices corresponding to flow sequences, shape (batch_size)
-        :param recent_hour: hour indices of all sequences, shape (batch_size, his_len+pre_len)
-        :return: prediction of future flows, shape (batch_size, pre_len)
-        """
+
         loc_embed = self.loc_embed_layer[loc_index]
         loc_h = self.embed_linear(loc_embed)  # (batch_size, latent_size)
         recent_flow_h = self.flow_linear(recent_history.unsqueeze(-1))  # (batch_size, his_len+pre_len, latent_size)
@@ -190,18 +172,15 @@ if __name__ == '__main__':
 
     temp = name.split('_')
     name_without_epoch = '_'.join(temp[:4])
-    if args.ablation != None:
-        embedding = torch.load('Washed_Embed/Ablation_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    elif args.para != None:
-        embedding = torch.load('Washed_Embed/Para_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    else:
-        embedding = torch.load('Washed_Embed/Result_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    # embedding = torch.load('Washed/poi2vec_256_sg/poi_repr.pth').to(device)
+
+    embedding = torch.load('Washed_Embed/Result_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
+    
     dataset = torch.load('Washed/common/{}_flow.pth'.format(dataset.lower()))
     batch_size = 128
 
     np.random.shuffle(dataset)
-    train_set = dataset[int(args.test_ratio * len(dataset)):]
+    valid_ratio = 0.1
+    train_set = dataset[int((args.test_ratio+valid_ratio) * len(dataset)):]
     test_set = dataset[:int(args.test_ratio * len(dataset))]
 
     model = Seq2seqFlowPredictor(loc_embed_layer=embedding, loc_embed_size=args.embed_size, fc_size=256,

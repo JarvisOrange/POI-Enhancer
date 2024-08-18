@@ -29,7 +29,7 @@ dataset_geo_path_dict = {
     'TKY':'./Dataset/TKY/tky_geo.csv',
 }
 
-### gen poi visit-time feature
+### gen poi visit-pattern feature
 def get_weekday_weekend(time):
         if '-' in time:
             time = datetime.strptime(time,"%Y-%m-%d")
@@ -136,7 +136,7 @@ def gen_poi_visit_time_feature(dataset_name,  save_path=None):
 
 
         
-### gen poi poi-nearby feature
+### gen poi poi-surronding feature
 def cal_degree(lon, lat, min_distance=0.5):
         r = 6371
         dlon =  2 * math.asin(math.sin(min_distance/(2*r))/math.cos(lat * math.pi/180))
@@ -224,13 +224,11 @@ def gen_poi_category_feature(dataset_name,  save_path=None):
 
 
 
-# gen_poi_category_feature(dataset, save_path= save_path)
-
-# for dataset in ['NY','SG','TKY']:
-#     save_path = "./Feature_washed/" + dataset + "/"
-#     if not os.path.exists(save_path):
-#             os.makedirs(save_path)
-#     gen_poi_visit_time_feature(dataset, save_path = save_path)
+for dataset in ['NY','SG','TKY']:
+    save_path = "./Feature_washed/" + dataset + "/"
+    if not os.path.exists(save_path):
+            os.makedirs(save_path)
+    gen_poi_visit_time_feature(dataset, save_path = save_path)
 
 for dataset in ['TKY','NY','SG']:
     save_path = "./Washed_Feature/" + dataset + "/"

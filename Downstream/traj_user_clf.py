@@ -1,7 +1,7 @@
 import torch
 from torch import nn
 from torch.nn.utils.rnn import pad_packed_sequence, pack_padded_sequence, pad_sequence
-from libcity_utils import next_batch, weight_init
+from downstream_utils import next_batch, weight_init
 import numpy as np
 from numpy.random import shuffle
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
@@ -54,18 +54,6 @@ def create_args():
         type=str,
         default=None,
         help="Result save path",
-    )
-
-    parser.add_argument(
-        "--ablation",
-        type=str,
-        default=None,
-    )
-
-    parser.add_argument(
-        "--para",
-        type=str,
-        default=None,
     )
 
     args = parser.parse_args()
@@ -170,12 +158,8 @@ if __name__ == '__main__':
 
     temp = name.split('_')
     name_without_epoch = '_'.join(temp[:4])
-    if args.ablation != None:
-        poi_embedding = torch.load('Washed_Embed/Ablation_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    elif args.para != None:
-        poi_embedding = torch.load('Washed_Embed/Para_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
-    else:
-        poi_embedding  = torch.load('Washed_Embed/Result_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
+    
+    poi_embedding  = torch.load('Washed_Embed/Result_Embed/{}/{}/{}.pt'.format(dataset,name_without_epoch, name)).to(device)
 
     poi_embedding.require_grad = False
     zero_tensor = torch.zeros(1, poi_embedding.shape[1]).to(device)
@@ -197,9 +181,10 @@ if __name__ == '__main__':
         assert data[0] in unique_uids
         data[0] = np.searchsorted(unique_uids, data[0])
 
+    valid_ratio = 0.1
     np.random.seed(42)
     shuffle(whole_set)
-    train_set = whole_set[int(len(whole_set) * args.test_ratio):]
+    train_set = whole_set[int(len(whole_set) * (args.test_ratio+valid_ratio)):]
     test_set = whole_set[:int(len(whole_set) * args.test_ratio)]
     print(f'Train set size: {len(train_set)}, test set size: {len(test_set)}')
     

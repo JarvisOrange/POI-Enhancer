@@ -61,7 +61,7 @@ def gen_timecat_neighbor(dataset_name, save_path="./Washed_ContrastDataset/"):
     poi_df = pd.merge(poi_df, poi_time_df, how='inner', on='geo_id')
 
     
-    x= 0 # 269.7588670826732
+    
     time_cat_neighbor_list = []
     for _, row in tqdm(poi_df.iterrows(), total=poi_df.shape[0]):
         poi_id = row['geo_id']
@@ -75,7 +75,7 @@ def gen_timecat_neighbor(dataset_name, save_path="./Washed_ContrastDataset/"):
 
         x+=len(temp)
 
-    print(x/poi_df.shape[0])
+    
     
     time_cat_neighbor_df = pd.DataFrame(time_cat_neighbor_list, columns=['geo_id','time_cat_positive'])
     save_path = save_path +'/'+ dataset_name +'/'
@@ -87,7 +87,5 @@ def gen_timecat_neighbor(dataset_name, save_path="./Washed_ContrastDataset/"):
 
         
     
-
-
 for dataset in ['TKY','NY','SG']:
     gen_timecat_neighbor(dataset)

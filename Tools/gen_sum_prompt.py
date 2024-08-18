@@ -56,7 +56,7 @@ def create_args():
     return args
 
 
-
+### for ablation task 1
 def generate(prompt_type): 
     args = create_args()
 
@@ -90,7 +90,6 @@ def generate(prompt_type):
 
     poi_feature_df = pd.read_csv(feature_data_path, sep=',', header=0, dtype={'osm_calculated_postcode':str})
 
-    
 
 
     if prompt_type != 'address':

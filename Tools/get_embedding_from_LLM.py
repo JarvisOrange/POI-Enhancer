@@ -27,7 +27,7 @@ def create_args():
         "--LLM",
         type=str,
         default="llama2",
-        choices=["llama2", "llama3", "chatglm2-6b","chatglm3", "gpt2","gpt2_medium","gpt2_large","gpt2_xl"],
+        choices=["llama2", "chatglm2", "gpt2"],
         help="which LLM to use",
     )
 
@@ -106,10 +106,10 @@ def main():
 
     tk_dataset.set_format(type='torch', columns=['input_ids'])
 
-    #  activation extraction
+    
 
     def process_activation_batch(batch_activations, step, batch_mask=None):
-        if args.LLM == 'chatglm3' or args.LLM == 'chatglm2':
+        if args.LLM == 'chatglm2':
             batch_activations = einops.rearrange(batch_activations, 'n b d -> b n d')
 
         cur_batch_size = batch_activations.shape[0]
@@ -134,11 +134,11 @@ def main():
     
 
     with torch.no_grad():
-        if args.LLM == 'llama2' or args.LLM =='llama3':
+        if args.LLM == 'llama2':
             layers = list(range(model.config.num_hidden_layers))
-        elif  args.LLM == 'chatglm2' or args.LLM == 'chatglm3':
+        elif  args.LLM == 'chatglm2':
             layers = list(range(model.config.num_layers))
-        elif  args.LLM == 'gpt2' or args.LLM == 'gpt2_large'or args.LLM == 'gpt2_medium' or args.LLM == 'gpt2_xl':
+        elif  args.LLM == 'gpt2':
             layers = list(range(model.config.n_layer))
 
         entity_mask = torch.tensor(tk_dataset['entity_mask'])

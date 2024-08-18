@@ -102,7 +102,7 @@ def gen_seq_neighbor(dataset_name, window=2,   save_path="./Washed_ContrastDatas
                     seq_sample[poi_id] = []
                 seq_sample[poi_id] = seq_sample[poi_id]+list((temp)['location'])
 
-    x= 0 # 10.545360110803324
+    
     seq_neighbor_list = []
     for k in seq_sample.keys():
         temp = list(set(seq_sample[k]))
@@ -114,12 +114,11 @@ def gen_seq_neighbor(dataset_name, window=2,   save_path="./Washed_ContrastDatas
     save_path = save_path +'/'+ dataset_name +'/'
     if not os.path.exists(save_path):
             os.makedirs(save_path)
-    # name =  dataset_name + "_seq_positive_train.csv"
-    name =  dataset_name + "_seq_positive_train.csv"
+    name =  dataset_name + "_seq_positive.csv"
 
     seq_neighbor_df.to_csv(save_path + name, sep=',', index=False, header=True)
 
 
     
-for dataset in ['NY']:   
+for dataset in ['NY','TKY','SG']:   
     gen_seq_neighbor(dataset)  

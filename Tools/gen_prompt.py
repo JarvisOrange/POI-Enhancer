@@ -266,7 +266,7 @@ def main():
             prompt +=  "The latitude and longitude of the POI are "+ lat +" and " + lon + '.'
 
 
-            # category = row['category']
+            
             category_nearby = row['category_nearby']
 
             prompt += "\n"+"Surrounding Information:" 

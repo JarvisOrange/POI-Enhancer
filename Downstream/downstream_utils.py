@@ -80,7 +80,7 @@ def create_src_trg(full_seq, pre_len, fill_value):
     src_seq, trg_seq = zip(*[[s[:-pre_len], s[pre_len:]] for s in full_seq])
     src_seq = np.transpose(np.array(list(zip_longest(*src_seq, fillvalue=fill_value))))
     trg_seq = np.transpose(np.array(list(zip_longest(*trg_seq, fillvalue=fill_value))))
-    # index_matrix = [1 if i < cl for i in range(len(src_seq) for cl in range())] 
+
     return src_seq, trg_seq
 
 def next_batch(data, batch_size):

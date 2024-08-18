@@ -4,7 +4,6 @@ from sklearn.cluster import KMeans
 from sklearn import metrics
 import argparse
 
-device='cuda:0'
 def create_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("--gpu", type=int, default=1, help="gpu")
@@ -63,21 +62,10 @@ if __name__ == '__main__':
     y_predict = k_means.predict(node_embedding)
     y_predict_useful = y_predict
     nmi = metrics.normalized_mutual_info_score(labels, y_predict_useful)
-    ars = metrics.adjusted_rand_score(labels, y_predict_useful)
-    # SC指数
-    sc = float(metrics.silhouette_score(node_embedding, k_means.labels_, metric='euclidean'))
-    # DB指数
-    db = float(metrics.davies_bouldin_score(node_embedding, k_means.labels_))
-    # CH指数
-    ch = float(metrics.calinski_harabasz_score(node_embedding, k_means.labels_))
-    print(f"Evaluate result [loc_cluaster] is sc = {sc:6f}, db = {db:6f}, ch = {ch:6f}, nmi = {nmi:6f}, ars = {ars:6f}")
+
     result = pd.DataFrame({
         'name': args.NAME,
-        'sc': sc,
-        'db': db,
-        'ch': ch,
         'nmi': nmi,
-        'ars':ars,
     }, index=[1])
 
 
