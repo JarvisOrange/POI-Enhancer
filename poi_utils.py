@@ -146,50 +146,24 @@ def simloss(embed_new, st_embed):
     
 
 def save_embed(Model, dataset, LLM, dim, poi_model, epoch, device, align_layer_num=3, cross_layer_num=3, ablation=0):
-    if ablation != 0:
-        name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'_ablation' + str(ablation)+'.pt'
-
-        name_statedict = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) +  '_Epoch_' +str(epoch) +'_ablation'+ str(ablation)+'.pt'
-    else:
-        if align_layer_num != 3:
-            name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'_align_' + str(align_layer_num) +'.pt'
-
-        elif cross_layer_num != 3:
-            name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'_cross_' + str(cross_layer_num) +'.pt'
-
-        else: 
-            name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'.pt'
-            
-        
     
-    if ablation != 0:
-        embed_path = './Washed_Embed/Ablation_Embed/'+ dataset +'/' + dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
-    elif align_layer_num != 3 or cross_layer_num != 3:
-        embed_path = './Washed_Embed/Para_Embed/'+ dataset +'/' + dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
-    else:
-        embed_path = './Washed_Embed/Result_Embed/'+ dataset +'/' + dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
+    name_embed = dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '_Epoch_' + str(epoch) +'.pt'
+            
+    embed_path = './Washed_Embed/Result_Embed/'+ dataset +'/' + dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
 
-    # model_path =  "./Washed_Model_state_dict_cache/" + dataset  +'/'+ dataset + '_' + LLM + '_' + poi_model + '_'+ str(dim) + '/'
 
     if not os.path.exists(embed_path):
         os.makedirs(embed_path)
 
-
     batch_size = 128
-
-
-    # torch.save({'model': Model.state_dict()}, model_path + name_statedict)
-
 
     path = './Dataset/' + dataset +'/'+ dataset.lower() + '_geo.csv'
     poi_dataset = PoiDataset(path, device)
     poi_dataloader = DataLoader(poi_dataset, batch_size = batch_size, shuffle = False)
 
-    
 
     result_embed = torch.empty((len(poi_dataset), dim)).cpu()
-
-    # torch.cuda.empty_cache()
+    
     index = 0
     with torch.no_grad():
         for step, batch in enumerate(poi_dataloader):
@@ -198,7 +172,6 @@ def save_embed(Model, dataset, LLM, dim, poi_model, epoch, device, align_layer_n
             except:
                 print(batch)
             out = out[0].squeeze(1)
-
 
             if out.shape[0] !=  batch_size:
                 result_embed[step * batch_size :step * batch_size + out.shape[0],:] = out.cpu()

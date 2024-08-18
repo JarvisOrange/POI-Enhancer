@@ -179,10 +179,7 @@ class CrossAttentionTransformer(nn.Module):
        
 
     def forward(self, x, y):
-        """ 
-        x fused into y
-        """
-        
+
         q = self.to_q(x)
         k = self.to_k(y)
         v = self.to_v(y)
@@ -331,19 +328,6 @@ class PoiEnhancer_ablation2(nn.Module):
 
         self.cross_layer_num = cross_layer_num
         
-        # self.nearby_alignment = nn.ModuleList([])
-        # for _ in range(cross_layer_num):
-        #     self.nearby_alignment.append(
-        #         CrossAttentionTransformer(dim=self.poi_e_dim)
-        #     )
-
-        # self.time_alignment = nn.ModuleList([])
-        # for _ in range(cross_layer_num):
-        #     self.time_alignment.append(
-        #         CrossAttentionTransformer(dim=self.poi_e_dim)
-        #     )
-
-        # self.semantic_attention_fusion =  FuseAttentionBlock(dim=self.poi_e_dim, dim_fused= 2 * self.poi_e_dim)
 
         self.dual_modal_fuse_norm = LayerNorm(dim)
         self.dual_modal_fusion = nn.ModuleList([])
@@ -363,27 +347,7 @@ class PoiEnhancer_ablation2(nn.Module):
     def forward(self, batch):
     
         llm_e_a = self.llm_layer_a(batch)
-        # llm_e_a_2 = llm_e_a_1
         
-        # llm_e_c = self.llm_layer_c(batch)
-        # llm_e_t = self.llm_layer_t(batch)
-
-        
-    
-        # for block_nearby in self.nearby_alignment:
-        #     llm_e_a_1 = block_nearby(llm_e_c, llm_e_a_1)
-        
-        # for block_time in self.time_alignment:
-        #     llm_e_a_2 = block_time(llm_e_t, llm_e_a_2)
-
-        # out = torch.stack([llm_e_a_1, llm_e_a_2])
-
-        # out1 = rearrange(out, 'fn b n d -> fn (b n) d')
-        
-        # coef = self.semantic_attention_fusion(out1)
-
-        # temp_out = coef[0] * out[0] + coef[1] * out[1] 
-
         y = self.poi_layer(batch)
         y_ = y
 
