@@ -26,3 +26,9 @@ Washed_ContrastDataset/
 Washed_Model_state_dict_cache/
 Washed_Prompt/
 Washed_Result_Metric
+
+LLM_embed_classify.py
+main_ablated_cl.py
+main_ablated_LLM.py
+main_geo_nocat_rebuttal.py
+main_seq_continue_rebuttal.py
