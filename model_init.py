@@ -149,7 +149,7 @@ class CrossAttentionBlock(nn.Module):
     
 
     
-class SelfAttentionBlock(nn.Module):
+class DualFeatureAlignmentBlock(nn.Module):
     def __init__(self, 
                  dim, 
                  dim_head=32, 
@@ -221,7 +221,7 @@ class SelfAttentionBlock(nn.Module):
     
     
 
-class FuseAttentionBlock(nn.Module):
+class SemanticFusion(nn.Module):
     def __init__(self, dim, dim_fused):
         super().__init__()
         self.W = nn.Linear(dim, dim_fused, bias=False)
@@ -237,21 +237,7 @@ class FuseAttentionBlock(nn.Module):
         '''
         x: b n d
         '''
-        # seq_fts = self.W(src)
-        # print(seq_fts.shape) #1536 1 8
-        # f_1 = self.f1(seq_fts)
-        # f_2 = self.f2(seq_fts)
-        # print(f_1.shape) #1536 1 8
-        # print(f_2.transpose(1, 2).shape) #1536 8 1
-        # logits = f_1 + f_2.transpose(1, 2)
-        # print(logits.shape) #1536 8 8
-        # coefs = torch.mean(self.act(logits), dim=-1)
-        # print(coefs.shape) #1536  8
-        # coefs = torch.mean(coefs, dim=0)
-        # print(coefs.shape) #1536  8
-        # coefs = F.softmax(coefs, dim=-1)
- 
-        # exit()
+
 
         f = self.W(x) # b n dim_fused
 
@@ -304,11 +290,11 @@ class PoiEnhancer(nn.Module):
 
 
 
-        self.attention_block1 = SelfAttentionBlock(dim=self.poi_e_dim)
-        self.attention_block2 = SelfAttentionBlock(dim=self.poi_e_dim)
-        self.attention_block3 = SelfAttentionBlock(dim=self.poi_e_dim)
+        self.dfa_block1 = DualFeatureAlignmentBlock(dim=self.poi_e_dim)
+        self.dfa_block2 = DualFeatureAlignmentBlock(dim=self.poi_e_dim)
+        self.dfa_block3 = DualFeatureAlignmentBlock(dim=self.poi_e_dim)
 
-        self.fuse_attention =  FuseAttentionBlock(dim=self.poi_e_dim, dim_fused= 2 * self.poi_e_dim)
+        self.semantic_fusion =  SemanticFusion(dim=self.poi_e_dim, dim_fused= 2 * self.poi_e_dim)
 
         self.cross_layer_num = cross_layer_num
 
@@ -333,16 +319,15 @@ class PoiEnhancer(nn.Module):
 
         y = self.poi_layer(batch)
 
-        x1 = self.attention_block1(llm_e1)
-        x2 = self.attention_block2(llm_e2)
-        x3 = self.attention_block3(llm_e3)
+        x1 = self.dfa_block1(llm_e1)
+        x2 = self.dfa_block2(llm_e2)
+        x3 = self.dfa_block3(llm_e3)
 
         out = torch.stack([x1, x2, x3])
 
         out1 = rearrange(out, 'fn b n d -> fn (b n) d')
         
-        coef = self.fuse_attention(out1)
-
+        coef = self.semantic_fusion(out1)
 
         temp_out = coef[0] * out[0] + coef[1] * out[1] + coef[2] * out[2]
 
