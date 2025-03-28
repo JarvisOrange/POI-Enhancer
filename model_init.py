@@ -221,7 +221,7 @@ class DualFeatureAlignmentBlock(nn.Module):
     
     
 
-class SemanticFusion(nn.Module):
+class SemanticFusionCoef(nn.Module):
     def __init__(self, dim, dim_fused):
         super().__init__()
         self.W = nn.Linear(dim, dim_fused, bias=False)
@@ -294,7 +294,7 @@ class PoiEnhancer(nn.Module):
         self.dfa_block2 = DualFeatureAlignmentBlock(dim=self.poi_e_dim)
         self.dfa_block3 = DualFeatureAlignmentBlock(dim=self.poi_e_dim)
 
-        self.semantic_fusion =  SemanticFusion(dim=self.poi_e_dim, dim_fused= 2 * self.poi_e_dim)
+        self.semantic_fusion_coef =  SemanticFusionCoef(dim=self.poi_e_dim, dim_fused= 2 * self.poi_e_dim)
 
         self.cross_layer_num = cross_layer_num
 
@@ -327,7 +327,7 @@ class PoiEnhancer(nn.Module):
 
         out1 = rearrange(out, 'fn b n d -> fn (b n) d')
         
-        coef = self.semantic_fusion(out1)
+        coef = self.semantic_fusion_coef(out1)
 
         temp_out = coef[0] * out[0] + coef[1] * out[1] + coef[2] * out[2]
 
