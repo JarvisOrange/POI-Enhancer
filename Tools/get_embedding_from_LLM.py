@@ -27,7 +27,7 @@ def create_args():
         "--LLM",
         type=str,
         default="llama2",
-        choices=["llama2", "llama3", "chatglm2","chatglm3", "gpt2","gpt2_medium","gpt2_large","gpt2_xl"],
+        choices=["llama2", "llama3", "chatglm2-6b","chatglm3", "gpt2","gpt2_medium","gpt2_large","gpt2_xl"],
         help="which LLM to use",
     )
 
@@ -43,7 +43,7 @@ def create_args():
         "--prompt_type",
         type=str,
         default="time",
-        choices=['address', 'time','cat_nearby'],
+        choices=['address', 'time','cat_nearby','sum'],
     )
 
     args = parser.parse_args()
@@ -61,8 +61,7 @@ def main():
     tokenizer = AutoTokenizer.from_pretrained(LLM_datapath, trust_remote_code=True)
  
     model = AutoModel.from_pretrained(LLM_datapath, trust_remote_code=True).half().cuda(device)
-    model.resize_token_embeddings(len(tokenizer))
-
+    
     if tokenizer.bos_token is None:
         tokenizer.add_special_tokens({'bos_token': '<sop>'})
         model.resize_token_embeddings(len(tokenizer))
@@ -70,14 +69,14 @@ def main():
     if tokenizer.pad_token is None:
         tokenizer.add_special_tokens({'pad_token': '[PAD]'})
         model.resize_token_embeddings(len(tokenizer))
+
     
     model = model.eval()
 
-    prompt_data_path = "./Prompt/" + "" + args.dataset +"/"+ "prompt_" + args.dataset + "_" + args.prompt_type + '.csv'
+    prompt_data_path = "./Washed_Prompt/" + "" + args.dataset +"/"+ "prompt_" + args.dataset + "_" + args.prompt_type + '.csv'
 
 
     prompt_df = pd.read_csv(prompt_data_path, header=0)
-    print(len(prompt_df))
     dataset_strings = list(prompt_df['prompt'])
 
     
@@ -121,10 +120,8 @@ def main():
             torch.argmax(batch_mask.flip(dims=[1]), dim=1)
 
         
-
         d_act = batch_activations.shape[2]
         expanded_mask = last_entity_token.unsqueeze(-1).expand(-1, d_act)
-        
         processed_activations = batch_activations[
             torch.arange(cur_batch_size).unsqueeze(-1),
             expanded_mask,
@@ -194,7 +191,7 @@ def main():
 
     last_layer_activation = layer_activations[last_layer_id]
         
-    save_path = "./Embed/LLM_Fix_Embed/" + "" + args.dataset +"/"    
+    save_path = "./Washed_Embed/LLM_Embed/" + args.LLM +'/'+ args.dataset +"/" 
     save_name = f'{args.dataset}_{args.LLM}_{args.prompt_type}_LAST.pt'
 
     if not os.path.exists(save_path):
