@@ -1,3 +1,153 @@
-**The official repository of AAAI-25 "POI-Enhancer: An LLM-based Semantic Enhancement Framework for POI Representation Learning".**
+# POI-Enhancer: An LLM-based Semantic Enhancement Framework for POI Representation Learning
 
+**Official implementation for AAAI 2025**
 
+This repository contains the code and reproduction instructions for the paper *"POI-Enhancer: An LLM-based Semantic Enhancement Framework for POI Representation Learning"*. POI-Enhancer leverages the semantic capabilities of large language models (LLMs) to enhance POI representation learning, supporting semantic enhancement and downstream evaluation for various baseline POI embeddings (e.g., POI2Vec, SkipGram, CTLE, TEASER, TALE).
+
+---
+
+## Requirements
+
+- Python 3.8
+- PyTorch
+
+---
+
+## Data & Resources
+
+- **Baseline POI embeddings**: Prepare the POI embedding vectors to be enhanced and place them under **`Baseline_Embed/`**.  
+  Pre-trained baseline embeddings can be downloaded here: [Download link xxx]
+- **Contrastive data**: Pre-processed positive/negative pairs are stored in **`ContrastDataset/`** and can be used directly.  
+  For full or custom data, see: [Download link xxx]
+
+---
+
+## Running the Code
+
+### 1. Prepare POI embedding vectors to be enhanced
+
+Place your POI embedding vectors in **`Baseline_Embed/`**.  
+If using our provided baselines, download them from the **Baseline embedding link** above and extract into this directory.
+
+### 2. Generate POI extra features (time & category nearby)
+
+Run the script to generate POI visit-time and category-nearby features:
+
+```bash
+python Tools/gen_POI_extra_feature.py
+```
+
+Outputs are saved under **`Feature/[dataset]/`**:
+
+- `poi_[dataset]_time.csv` — POI visit-time features  
+- `poi_[dataset]_cat_nearby.csv` — POI category-nearby features  
+
+> **Note:** Pre-processed versions of these files are already included in this repo. For reproduction only, you can use the existing `Feature/` data and skip this step.
+
+### 3. Set up the environment
+
+- Install project dependencies (e.g., `torch`, `pandas`, `geopy`, `tqdm`).
+- Please Download Llama2-7b model in the folder '\LLMs\llama2'
+
+### 4. Generate prompts
+
+Run the following script to generate prompt text for each dataset and prompt type:
+
+```bash
+bash Scripts/prompt_generate.sh
+```
+
+This generates prompts for `NY`, `SG`, `TKY` and types `address`, `time`, `cat_nearby`. Results are saved under **`Prompt/`**.
+
+### 5. Extract LLM semantic embeddings
+
+Use the LLM to produce semantic vectors from the prompts:
+
+```bash
+bash Scripts/llm_embed_extract.sh
+```
+
+The script calls `Tools/get_embedding_from_LLM.py` to extract semantic embeddings for each dataset and prompt type. Adjust `--gpu`, `--LLM`, etc. in the script as needed.
+
+### 6. Generate positive samples (geo, sequence, time–category)
+
+Run the following three scripts to obtain geo, sequence, and time–category positive samples for contrastive learning:
+
+```bash
+python Tools/gen_geo_neighbor.py      # Geo-neighbor positives
+python Tools/gen_seq_neighbor.py     # Sequence co-occurrence positives
+python Tools/gen_timecat_neighbor.py # Time–category positives
+```
+
+Outputs are written to **`ContrastDataset/[dataset]/`**, e.g.:
+
+- `[dataset]_geo_positive.csv`
+- `[dataset]_seq_positive.csv`
+- `[dataset]_time_cat_positive.csv`
+
+(Exact filenames may vary; check the code.)
+
+### 7. Build contrastive training data
+
+Merge the positive samples and sample negatives to form training pairs:
+
+```bash
+python Tools/process_contrast_data.py
+```
+
+Outputs are saved under **`ContrastDataset/`** (e.g., `NY_train.csv`, `SG_train.csv`, `TKY_train.csv`).  
+Pre-processed contrastive data is available via the **contrastive data download link** above.
+
+### 8. Train the enhancer and run downstream evaluation
+
+- **Train the POI-Enhancer model:**
+
+```bash
+bash Scripts/model_train.sh
+```
+
+Edit the script to set `--dataset`, `--poi_model`, `--LLM`, `--gpu`, `--epoch_num`, `--batch_size`, `--dim`, `--save_interval`, etc., as needed.
+
+- **Downstream evaluation:**
+
+After training, run the downstream script to evaluate the enhanced representations (e.g., POI classification, trajectory next-POI prediction, clustering):
+
+```bash
+bash Scripts/downstream.sh
+```
+
+In `downstream.sh`, set `embed_name`, `baseline_name`, and `dataset` according to your training setup so the correct checkpoint and baseline are loaded.
+
+---
+
+## Directory structure
+
+- **`Baseline_Embed/`** — POI embedding vectors to be enhanced  
+- **`Dataset/`** — Raw trajectory and geo data (NY / SG / TKY)  
+- **`Feature/`** — POI time and category-nearby features (`poi_*_time.csv`, `poi_*_cat_nearby.csv`)  
+- **`Prompt/`** — Generated prompt text  
+- **`ContrastDataset/`** — Contrastive positive/negative samples and training pairs  
+- **`Tools/`** — Scripts for feature generation, neighbor construction, contrastive data processing, LLM embedding  
+- **`Scripts/`** — Shell scripts for one-click runs  
+- **`Downstream/`** — Downstream tasks (e.g., POI classification, trajectory prediction, clustering)  
+- **`main.py`** — Main training entry for POI-Enhancer  
+
+---
+
+## Citation
+
+If you find this work useful, please cite:
+
+```bibtex
+@inproceedings{poi-enhancer-aaai25,
+  title     = {POI-Enhancer: An LLM-based Semantic Enhancement Framework for POI Representation Learning},
+  booktitle = {AAAI},
+  year      = {2025}
+}
+```
+
+---
+
+## License & Acknowledgments
+
+Please comply with the licenses of this project and any referenced datasets and pre-trained models. We thank the authors of the related baselines and open-source projects.
