@@ -112,7 +112,7 @@ def main():
 
     llm_embed_path = "./Embed/LLM_Embed/" + dataset 
 
-    poi_embed_path = "./Embed/Poi_Model_Embed/"
+    poi_embed_path = "./Embed/Baseline_Embed/"
 
     llm_name_list_address = [dataset, LLM, 'address','LAST']
     llm_name_list_cat_nearby = [dataset, LLM, 'cat_nearby','LAST']
@@ -126,7 +126,7 @@ def main():
     path3 = llm_embed_path + '/' + '_'.join(llm_name_list_time) + '.pt'
 
 
-    path4 =  poi_embed_path +'/' + '_'.join(poi_name_list) + '/poi_repr/poi_repr.pth' 
+    path4 =  poi_embed_path +'/' + '_'.join(poi_name_list) + '/poi_repr.pth' 
 
 
     train_data_name = dataset+'_train.csv'
