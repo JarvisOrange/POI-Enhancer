@@ -112,7 +112,7 @@ def main():
 
     llm_embed_path = "./Embed/LLM_Embed/" + dataset 
 
-    poi_embed_path = "./Embed/Baseline_Embed/"
+    poi_embed_path = "./Baseline_Embed/"
 
     llm_name_list_address = [dataset, LLM, 'address','LAST']
     llm_name_list_cat_nearby = [dataset, LLM, 'cat_nearby','LAST']
