@@ -169,8 +169,8 @@ def train_flow_predictor(pre_model, train_set, test_set, batch_size, num_epoch,
 if __name__ == '__main__':
     args = create_args()
     device = torch.device("cuda:"+str(args.gpu) if torch.cuda.is_available() else "cpu")
-    embedding = torch.load(f'PATH_TO_DATASET/<dataset_name>/poi_repr.pth').to(device)
-    dataset = torch.load(f'PATH_TO_COMMON/<dataset_name>_flow.pth')
+    embedding = torch.load(f'Baseline_Embed/<dataset_name>/poi_repr.pth'.format(args.POI_MODEL_NAME)).to(device)
+    dataset = torch.load(f'Downstream/Dataset/<dataset_name>_flow.pth'.format(args.dataset))
     batch_size = 32
 
     np.random.shuffle(dataset)

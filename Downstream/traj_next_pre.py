@@ -156,7 +156,7 @@ if __name__ == '__main__':
 
     dataset = args.dataset
 
-    path1 = './Embed/Poi_Model_Embed/'+ args.POI_MODEL_NAME+'/poi_repr/'
+    path1 = './Baseline_Embed/'+ args.POI_MODEL_NAME+'/'
 
     path2 = './Embed/Result_Embed/' + dataset + '/'
 
