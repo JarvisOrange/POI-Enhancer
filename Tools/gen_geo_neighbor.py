@@ -51,7 +51,7 @@ def get_geo_cat_neighbor(poi_list, poi_id, cat, minlon, maxlon, minlat, maxlat):
     return poi_geo_cat_neighbor
 
 
-def gen_poi_geoneighbor(dataset_name,  save_path="./Washed_ContrastDataset/"):
+def gen_poi_geoneighbor(dataset_name,  save_path="./ContrastDataset/"):
     data_path = dataset_path_dict[dataset_name]
 
     columns_standard = ["geo_id","coordinates","category"]

@@ -10,9 +10,9 @@ import os
 
 
 dataset_path_dict = {
-    'NY':'./Washed_ContrastDataset/NY/',
-    'SG':'./Washed_ContrastDataset/SG/',
-    'TKY':'./Washed_ContrastDataset/TKY/',
+    'NY':'./ContrastDataset/NY/',
+    'SG':'./ContrastDataset/SG/',
+    'TKY':'./ContrastDataset/TKY/',
 }
 
 

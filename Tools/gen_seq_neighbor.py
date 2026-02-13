@@ -22,7 +22,7 @@ import os
 # }
 
 dataset_path_dict = {
-    'NY':'./Washed/common/ny_train_traj.csv',
+    'NY':'./Dataset/NY/ny_traj.csv',
     'SG':'./Dataset/SG/sg_traj.csv',
     'TKY':'./Dataset/TKY/tky_traj.csv',
 }
@@ -63,7 +63,7 @@ def get_day(time):
    
         
 
-def gen_seq_neighbor(dataset_name, window=2,   save_path="./Washed_ContrastDataset/"):
+def gen_seq_neighbor(dataset_name, window=2,   save_path="./ContrastDataset/"):
     data_path = dataset_path_dict[dataset_name]
 
     poi_df = pd.read_csv(data_path, sep=',', header=0)

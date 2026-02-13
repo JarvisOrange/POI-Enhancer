@@ -23,13 +23,13 @@ dataset_path_dict = {
 
 
 time_dataset_path_dict = {
-    'NY':'./Washed_Feature/NY/poi_NY_time.csv',
-    'SG':'./Washed_Feature/SG/poi_SG_time.csv',
-    'TKY':'./Washed_Feature/TKY/poi_TKY_time.csv',
+    'NY':'./Feature/NY/poi_NY_time.csv',
+    'SG':'./Feature/SG/poi_SG_time.csv',
+    'TKY':'./Feature/TKY/poi_TKY_time.csv',
 }
 
 
-def gen_timecat_neighbor(dataset_name, save_path="./Washed_ContrastDataset/"):
+def gen_timecat_neighbor(dataset_name, save_path="./ContrastDataset/"):
     data_path = dataset_path_dict[dataset_name]
 
     columns_standard = ["geo_id","coordinates","category"]

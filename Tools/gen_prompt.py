@@ -74,9 +74,9 @@ def main():
     dataset_name = args.dataset
 
     poi_data_path = "./Dataset/" + dataset_name+ '/' + dataset_name.lower() + '_geo.csv'
-    feature_data_path = "./Washed_Feature/" + "" + dataset_name +"/"+ "poi_" + dataset_name + "_" + prompt_type + '.csv'
+    feature_data_path = "./Feature/" + "" + dataset_name +"/"+ "poi_" + dataset_name + "_" + prompt_type + '.csv'
 
-    name_data_path = "./Washed_Feature/" + "" + dataset_name +"/"+ "poi_" + dataset_name + "_" + 'address' + '.csv'
+    name_data_path = "./Feature/" + "" + dataset_name +"/"+ "poi_" + dataset_name + "_" + 'address' + '.csv'
 
     columns_standard = ["poi_id", 'geo_origin_id',"coordinates"]
 
@@ -290,7 +290,7 @@ def main():
 
         
     
-    save_data_path = "./Washed_Prompt/" + "" + dataset_name +"/"+ "prompt_" + dataset_name + "_" + prompt_type + '.csv'
+    save_data_path = "./Prompt/" + "" + dataset_name +"/"+ "prompt_" + dataset_name + "_" + prompt_type + '.csv'
     save_prompt(prompt_result, save_data_path)
 
             

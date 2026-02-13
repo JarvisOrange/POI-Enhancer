@@ -227,13 +227,13 @@ def gen_poi_category_feature(dataset_name,  save_path=None):
 # gen_poi_category_feature(dataset, save_path= save_path)
 
 # for dataset in ['NY','SG','TKY']:
-#     save_path = "./Feature_washed/" + dataset + "/"
+#     save_path = "./Feature/" + dataset + "/"
 #     if not os.path.exists(save_path):
 #             os.makedirs(save_path)
 #     gen_poi_visit_time_feature(dataset, save_path = save_path)
 
 for dataset in ['TKY','NY','SG']:
-    save_path = "./Washed_Feature/" + dataset + "/"
+    save_path = "./Feature/" + dataset + "/"
     if not os.path.exists(save_path):
             os.makedirs(save_path)
     gen_poi_category_feature(dataset, save_path = save_path)

@@ -73,7 +73,7 @@ def main():
     
     model = model.eval()
 
-    prompt_data_path = "./Washed_Prompt/" + "" + args.dataset +"/"+ "prompt_" + args.dataset + "_" + args.prompt_type + '.csv'
+    prompt_data_path = "./Prompt/" + "" + args.dataset +"/"+ "prompt_" + args.dataset + "_" + args.prompt_type + '.csv'
 
 
     prompt_df = pd.read_csv(prompt_data_path, header=0)
@@ -191,7 +191,7 @@ def main():
 
     last_layer_activation = layer_activations[last_layer_id]
         
-    save_path = "./Washed_Embed/LLM_Embed/" + args.LLM +'/'+ args.dataset +"/" 
+    save_path = "./Embed/LLM_Embed/" + args.LLM +'/'+ args.dataset +"/" 
     save_name = f'{args.dataset}_{args.LLM}_{args.prompt_type}_LAST.pt'
 
     if not os.path.exists(save_path):
