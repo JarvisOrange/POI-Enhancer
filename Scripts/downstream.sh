@@ -1,6 +1,6 @@
 #!/bin/bash
 
-embed_name="NY_llama2_tale_256_Epoch_40"
+embed_name="NY_llama2_tale_256_Epoch_5"
 baseline_name='tale_256_ny'
 dataset='NY'
 
