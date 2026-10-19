@@ -56,7 +56,7 @@ POI-Enhancer/
 ## Data & Resources
 
 - **Baseline POI embeddings**: Prepare the POI embedding vectors to be enhanced and place them under **`Baseline_Embed/`**.  The poi recommendation task datasets are in the each baseline folder respectively.
-  Pre-trained baseline embeddings can be downloaded here: https://bhpan.buaa.edu.cn/link/AAE1E24D450FD2459C85F2F281223E9B46
+  Pre-trained baseline embeddings can be downloaded here: https://bhpan.buaa.edu.cn/link/AA24E0B0F67C3A477E9A12E139B0EA79D1
 - **Contrastive data**: Pre-processed positive/negative pairs are stored in **`ContrastDataset/`** and can be used directly.  
   The processed ContrastDataset can be downloaded here: https://bhpan.buaa.edu.cn/link/AA98AF9E01DA094874918B39A6815C4CD4
 
